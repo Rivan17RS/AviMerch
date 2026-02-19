@@ -1,0 +1,6 @@
+@AviMerch.API_HostAddress = http://localhost:5047
+
+GET {{AviMerch.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
