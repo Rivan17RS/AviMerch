@@ -1,9 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using AviMerch.Domain.Entities;
+using AviMerch.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace AviMerch.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public DbSet<Product> Products => Set<Product>();
 
