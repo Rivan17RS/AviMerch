@@ -1,11 +1,13 @@
 using AviMerch.Application.DTOs;
 using AviMerch.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AviMerch.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous] // default open
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -32,6 +34,7 @@ public class ProductsController : ControllerBase
         });
     }
 
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -43,6 +46,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    [Authorize(Roles = "Seller,Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateProductDto dto)
     {
@@ -51,6 +55,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
+    [Authorize(Roles = "Seller,Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, UpdateProductDto dto)
     {
@@ -62,6 +67,7 @@ public class ProductsController : ControllerBase
         return NoContent(); // 204 REST compliant
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
