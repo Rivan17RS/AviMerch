@@ -84,6 +84,10 @@ builder.Services.AddAuthorization();
 // Application Services (DI)
 builder.Services.AddScoped<IProductService, ProductService>();
 
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<IOrderService, OrderService>();
+
 var app = builder.Build();
 
 
@@ -109,6 +113,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseHttpsRedirection();
 

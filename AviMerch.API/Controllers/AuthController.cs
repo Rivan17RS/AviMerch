@@ -1,4 +1,4 @@
-using AviMerch.Application.DTOs;
+using AviMerch.Application.DTO;
 using AviMerch.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

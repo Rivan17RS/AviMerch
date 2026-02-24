@@ -10,7 +10,7 @@ public class Product
     public string Category { get; set; } = string.Empty;
     public string Province { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
-    public Guid SellerId { get; set; }
+    public string SellerId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
 }

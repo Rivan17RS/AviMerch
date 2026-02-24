@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AviMerch.Application.DTOs;
+namespace AviMerch.Application.DTO;
 
 public class RegisterDto
 {

@@ -1,4 +1,5 @@
-namespace AviMerch.Application.DTOs;
+using System.ComponentModel.DataAnnotations;
+namespace AviMerch.Application.DTO;
 
 public class CreateProductDto
 {

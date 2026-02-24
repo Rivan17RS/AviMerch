@@ -1,13 +1,14 @@
-using AviMerch.Application.DTOs;
+using AviMerch.Application.DTO;
 using AviMerch.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace AviMerch.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AllowAnonymous] // default open
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -17,6 +18,8 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
+    // PUBLIC - Browse products
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetProducts(int pageNumber = 1, int pageSize = 10)
     {
@@ -34,7 +37,8 @@ public class ProductsController : ControllerBase
         });
     }
 
-
+    // PUBLIC - Get single product
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -46,19 +50,41 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    // Seller/Admin - Create product
     [Authorize(Roles = "Seller,Admin")]
     [HttpPost]
-    public async Task<IActionResult> Create(CreateProductDto dto)
+    public async Task<IActionResult> CreateProduct(CreateProductDto dto)
     {
-        var product = await _productService.CreateProductAsync(dto);
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        var createdProduct = await _productService.CreateProductAsync(dto);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = createdProduct.Id },
+            createdProduct
+        );
     }
 
+    // Seller (owner) or Admin - Update product
     [Authorize(Roles = "Seller,Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, UpdateProductDto dto)
     {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var isAdmin = User.IsInRole("Admin");
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var product = await _productService.GetProductByIdAsync(id);
+
+        if (product == null)
+            return NotFound();
+
+        // Ownership check
+        if (product.SellerId.ToString() != userId && !isAdmin)
+            return Forbid();
+
         var success = await _productService.UpdateProductAsync(id, dto);
 
         if (!success)
@@ -67,6 +93,7 @@ public class ProductsController : ControllerBase
         return NoContent(); // 204 REST compliant
     }
 
+    // Admin only - Delete product
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
@@ -77,5 +104,20 @@ public class ProductsController : ControllerBase
             return NotFound();
 
         return NoContent(); // 204 REST compliant
+    }
+
+    // Seller/Admin - Get only my products
+    [Authorize(Roles = "Seller,Admin")]
+    [HttpGet("my-products")]
+    public async Task<IActionResult> GetMyProducts()
+    {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var products = await _productService.GetProductsBySellerAsync(userId);
+
+        return Ok(products);
     }
 }

@@ -16,7 +16,19 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(builder);
+        base.OnModelCreating(builder); // Product restricctions and relationships to delete historical orders but not products
+
+        builder.Entity<Order>()
+        .HasMany(o => o.OrderItems)
+        .WithOne(oi => oi.Order)
+        .HasForeignKey(oi => oi.OrderId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<OrderItem>()
+        .HasOne(oi => oi.Product)
+        .WithMany()
+        .HasForeignKey(oi => oi.ProductId)
+        .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Product>(entity =>
         {
@@ -25,4 +37,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                   .HasColumnType("decimal(18,2)");
         });
     }
+
+
+public DbSet<Order> Orders => Set<Order>();
+public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
 }
