@@ -1,4 +1,5 @@
 using AviMerch.Application.DTO;
+using Microsoft.AspNetCore.Authorization;
 using AviMerch.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,41 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _configuration;
 
-    public AuthController(UserManager<ApplicationUser> userManager,
-                          IConfiguration configuration)
+    private readonly RoleManager<IdentityRole> _roleManager;
+
+    public AuthController(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = _userManager.Users.ToList();
+
+        var result = new List<AdminUserResponse>();
+
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+
+            result.Add(new AdminUserResponse
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                UserName = user.UserName ?? string.Empty,
+                FullName = user.FullName,
+                Roles = roles.ToList()
+            });
+        }
+
+        return Ok(result);
     }
 
     [HttpPost("register")]
@@ -88,4 +119,27 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    // promote user to a role (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("admin/assign-role")]
+    public async Task<IActionResult> AssignRole(UpdateUserRoleDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(dto.UserId);
+
+        if (user == null)
+            return NotFound("User not found");
+
+        if (!await _roleManager.RoleExistsAsync(dto.Role))
+            return BadRequest("Role does not exist");
+
+        var currentRoles = await _userManager.GetRolesAsync(user);
+
+        // Remove existing roles (optional, depending on your business rule)
+        await _userManager.RemoveFromRolesAsync(user, currentRoles);
+
+        await _userManager.AddToRoleAsync(user, dto.Role);
+
+        return Ok($"User assigned to role {dto.Role}");
+}
 }

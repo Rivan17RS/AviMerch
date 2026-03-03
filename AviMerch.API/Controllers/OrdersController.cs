@@ -25,4 +25,24 @@ public class OrdersController : ControllerBase
 
         return Ok(new { OrderId = orderId });
     }
+
+    [Authorize(Roles = "Buyer")]
+    [HttpGet("my-orders")]
+    public async Task<IActionResult> GetMyOrders()
+    {
+        var buyerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var orders = await _orderService.GetOrdersByBuyerAsync(buyerId!);
+
+        return Ok(orders);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/orders")]
+    public async Task<IActionResult> GetAllOrders()
+    {
+        var orders = await _orderService.GetAllOrdersAsync();
+        return Ok(orders);
+    }
+
 }

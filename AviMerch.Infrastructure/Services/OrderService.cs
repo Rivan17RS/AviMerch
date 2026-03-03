@@ -41,6 +41,8 @@ public class OrderService : IOrderService
                 Status = OrderStatus.Pending
             };
 
+            decimal totalAmount = 0m;
+
             foreach (var item in request.Items)
             {
                 var product = products.First(p => p.Id == item.ProductId);
@@ -52,8 +54,10 @@ public class OrderService : IOrderService
                     throw new InvalidOperationException(
                         $"Insufficient stock for product {product.Name}");
 
-                // Deduct stock
                 product.StockQuantity -= item.Quantity;
+
+                var lineTotal = product.Price * item.Quantity;
+                totalAmount += lineTotal;
 
                 order.OrderItems.Add(new OrderItem
                 {
@@ -63,6 +67,8 @@ public class OrderService : IOrderService
                     UnitPrice = product.Price
                 });
             }
+
+            order.TotalAmount = totalAmount;
 
             _context.Orders.Add(order);
 
@@ -76,5 +82,48 @@ public class OrderService : IOrderService
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    public async Task<List<OrderResponse>> GetOrdersByBuyerAsync(string buyerId)
+    {
+        var orders = await _context.Orders
+            .Include(o => o.OrderItems)
+            .Where(o => o.BuyerId == buyerId)
+            .ToListAsync();
+
+        return orders.Select(o => new OrderResponse
+        {
+            OrderId = o.Id,
+            CreatedAt = o.CreatedAt,
+            TotalAmount = o.TotalAmount,
+            Status = o.Status.ToString(),
+            Items = o.OrderItems.Select(i => new OrderItemResponse
+            {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
+        }).ToList();
+    }
+
+    public async Task<List<OrderResponse>> GetAllOrdersAsync()
+    {
+        var orders = await _context.Orders
+            .Include(o => o.OrderItems)
+            .ToListAsync();
+
+        return orders.Select(o => new OrderResponse
+        {
+            OrderId = o.Id,
+            CreatedAt = o.CreatedAt,
+            TotalAmount = o.TotalAmount,
+            Status = o.Status.ToString(),
+            Items = o.OrderItems.Select(i => new OrderItemResponse
+            {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
+        }).ToList();
     }
 }
